@@ -1,6 +1,6 @@
 targetScope = 'subscription'
 
-param udrFirewallId string = '/subscriptions/6ff9e090-f045-45ba-adec-183d64c01b9b/resourceGroups/hub/providers/Microsoft.Network/routeTables/udr-firewall'
+param udrFirewallId string
 param location string = 'westeurope'
 
 var policyName = 'enforce-traffic-through-firewall'
