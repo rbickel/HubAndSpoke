@@ -16,6 +16,13 @@ resource firewallPublicIp 'Microsoft.Network/publicIPAddresses@2021-08-01' = {
   }
 }
 
+module firewallPolicy 'firewall-policy.bicep' = {
+  name: 'firewallPolicy'
+  params:{
+    location: location
+  }
+}
+
 resource firewall 'Microsoft.Network/azureFirewalls@2021-08-01' = {
   name: '${resourcePrefix}firewall'
   location: location
@@ -33,9 +40,9 @@ resource firewall 'Microsoft.Network/azureFirewalls@2021-08-01' = {
         }
       }
     ]
-    applicationRuleCollections:[]
-    natRuleCollections:[]
-    networkRuleCollections:[]
+    firewallPolicy: {
+      id: firewallPolicy.outputs.policyId
+    }
     sku:{
       tier: 'Standard'
     }
