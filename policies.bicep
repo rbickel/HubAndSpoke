@@ -1,6 +1,7 @@
 targetScope = 'subscription'
 
 param udrFirewallId string
+param location string = 'westeurope'
 
 var policyName = 'enforce-traffic-through-firewall'
 var policyDisplayName = 'Enforce internet traffic through Azure Firewall'
@@ -42,14 +43,8 @@ resource policy 'Microsoft.Authorization/policyDefinitions@2020-09-01' = {
             notIn: '[parameters(\'excludedSubnets\')]'
           }
           {
-            not: {
-              anyOf: [
-                {
-                  equals: '[parameters(\'routeId\')]'
-                  field: 'Microsoft.Network/virtualNetworks/subnets/routeTable.id'
-                }
-              ]
-            }
+            notEquals: '[parameters(\'routeId\')]'
+            field: 'Microsoft.Network/virtualNetworks/subnets/routeTable.id'
           }
         ]
       }
@@ -69,5 +64,17 @@ resource policy 'Microsoft.Authorization/policyDefinitions@2020-09-01' = {
         }
       }
     }
+  }
+}
+
+resource assignment 'Microsoft.Authorization/policyAssignments@2020-09-01' = {
+  name: policyName
+  location: location
+  identity: {
+    type: 'SystemAssigned'
+  }
+  properties: {
+    displayName: policyDisplayName
+    policyDefinitionId: policy.id
   }
 }

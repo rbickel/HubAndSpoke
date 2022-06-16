@@ -4,20 +4,28 @@
 */
 
 targetScope = 'subscription'
+param location string = 'westeurope'
 
 module hub 'hub.bicep' = {
   name: 'hub'
+  params: {
+    location: location
+  }   
 }
 
 module policy 'policies.bicep' = {
   name: 'policy'
   params: {
     udrFirewallId: hub.outputs.udrFirewallId
+    location: location
   }
 }
 
 module spoke 'spoke.bicep' = {
   name: 'spoke'
+  params: {
+    location: location
+  }  
   dependsOn:[
     hub
   ]
