@@ -25,7 +25,8 @@ module spoke 'spoke.bicep' = {
   name: 'spoke'
   params: {
     location: location
-  }  
+    spokeNumber: 1
+  }
   dependsOn:[
     hub
   ]

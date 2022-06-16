@@ -1,11 +1,12 @@
 targetScope = 'subscription'
 
-param udrFirewallId string
+param udrFirewallId string = '/subscriptions/6ff9e090-f045-45ba-adec-183d64c01b9b/resourceGroups/hub/providers/Microsoft.Network/routeTables/udr-firewall'
 param location string = 'westeurope'
 
 var policyName = 'enforce-traffic-through-firewall'
 var policyDisplayName = 'Enforce internet traffic through Azure Firewall'
 var policyDescription = 'Adds a subnet UDR to enforce internet traffic through Azure Firewall'
+var roleDefinitionId =  '/providers/Microsoft.Authorization/roleDefinitions/4d97b98b-1d4f-4787-a291-c67834d212e7'
 
 resource policy 'Microsoft.Authorization/policyDefinitions@2020-09-01' = {
   name: policyName
@@ -13,9 +14,9 @@ resource policy 'Microsoft.Authorization/policyDefinitions@2020-09-01' = {
     displayName: policyDisplayName
     description: policyDescription
     policyType: 'Custom'
-    mode: 'Indexed'
+    mode: 'All'
     metadata: {
-      category: 'Networking'
+      category: 'Network'
     }
     parameters: {
       routeId: {
@@ -27,6 +28,7 @@ resource policy 'Microsoft.Authorization/policyDefinitions@2020-09-01' = {
         'defaultValue': [
           'AzureBastionSubnet'
           'AzureFirewallSubnet'
+          'GatewaySubnet'
         ]
       }
     }
@@ -35,16 +37,24 @@ resource policy 'Microsoft.Authorization/policyDefinitions@2020-09-01' = {
       if: {
         allOf: [
           {
-            equals: 'Microsoft.Network/virtualNetworks/subnets'
             field: 'type'
+            equals: 'Microsoft.Network/virtualNetworks/subnets'
           }
           {
             field: 'name'
             notIn: '[parameters(\'excludedSubnets\')]'
           }
           {
-            notEquals: '[parameters(\'routeId\')]'
-            field: 'Microsoft.Network/virtualNetworks/subnets/routeTable.id'
+            anyOf: [
+              {
+                field: 'Microsoft.Network/virtualNetworks/subnets/routeTable'
+                exists: 'false'
+              }
+              {
+                field: 'Microsoft.Network/virtualNetworks/subnets/routeTable.id'
+                notEquals: '[parameters(\'routeId\')]'
+              }
+            ]
           }
         ]
       }
@@ -52,7 +62,7 @@ resource policy 'Microsoft.Authorization/policyDefinitions@2020-09-01' = {
         effect: 'Modify'
         details: {
           roleDefinitionIds: [
-            '/providers/Microsoft.Authorization/roleDefinitions/4d97b98b-1d4f-4787-a291-c67834d212e7'
+            roleDefinitionId
           ]
           operations: [
             {
@@ -76,5 +86,13 @@ resource assignment 'Microsoft.Authorization/policyAssignments@2020-09-01' = {
   properties: {
     displayName: policyDisplayName
     policyDefinitionId: policy.id
+  }
+}
+
+resource systemIdentityPermissions 'Microsoft.Authorization/roleAssignments@2020-10-01-preview' = {
+  name: guid(policyName)
+  properties:{
+    principalId: assignment.identity.principalId
+    roleDefinitionId: roleDefinitionId
   }
 }
